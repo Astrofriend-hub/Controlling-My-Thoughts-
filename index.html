@@ -1,0 +1,236 @@
+"use strict";
+const $ = s => document.querySelector(s);
+let S = null;
+try { S = JSON.parse(localStorage.getItem("yc_v1")); } catch (e) {}
+S = S || { av: "🧭", done: [], a: {}, v: "home" };
+const save = () => { try { localStorage.setItem("yc_v1", JSON.stringify(S)); } catch (e) {} };
+const esc = t => (t || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ta = (k, ph, r = 2) => `<textarea data-k="${k}" rows="${r}" placeholder="${ph}">${esc(S.a[k])}</textarea>`;
+const inp = (k, ph) => `<input type="text" data-k="${k}" placeholder="${ph}" value="${esc(S.a[k])}">`;
+const story = (t, w) => `<div class="card story guide"><div class="face">${S.av}</div><div><span class="pill">${w}</span><p>${t}</p></div></div>`;
+const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2600); };
+const next = (to, label = "Siguiente ➜", dis = false) => `<button class="btn" data-a="go" data-p="${to}" ${dis ? "disabled" : ""}>${label}</button>`;
+
+/* ---------- Contenido ---------- */
+const WORLDS = [
+  ["🔍", "MUNDO 1", "EL DETECTIVE DE PENSAMIENTOS", "w1a"],
+  ["🚌", "MUNDO 2", "EL AUTOBÚS DE LAS EMOCIONES", "w2a"],
+  ["🏛️", "MUNDO 3", "EL MUSEO DE LOS ERRORES", "w3a"]
+];
+const CARDS = [
+  ["Mañana tengo un examen.", "h", "Es un hecho: está en el calendario y se puede comprobar."],
+  ["Seguro voy a perder el examen.", "p", "Es una predicción: todavía no ha pasado y no tenemos pruebas de que será así."],
+  ["Tengo cinco preguntas que responder.", "h", "Es un hecho si ya viste el examen y las contaste: se puede comprobar."],
+  ["Todos se van a burlar de mí si me equivoco.", "p", "Es una predicción: imagina el futuro y no sabemos si pasará."],
+  ["Puedo encontrar una pregunta difícil.", "o", "Es una posibilidad: puede pasar o no, y no significa que todo saldrá mal."]
+];
+const CAT = { h: "HECHO", p: "PREDICCIÓN", o: "POSIBILIDAD" };
+const LAB = [
+  ["¿Qué estoy pensando?", "Estoy pensando que..."],
+  ["¿Tengo pruebas de que eso sucederá?", "Pruebas a favor y en contra..."],
+  ["¿Qué otras cosas podrían pasar?", "Otras posibilidades..."],
+  ["¿Qué pensamiento me ayudaría a afrontar esta situación?", "Un pensamiento más realista..."]
+];
+const ALT = ["Puedo prepararme y hacer mi mejor esfuerzo.", "Una pregunta difícil no significa que todo el examen esté perdido.", "Puedo equivocarme y continuar.", "No sé todavía cómo me irá."];
+const PAS = [
+  ["😨", "Miedo", "¿Y si pierdes el examen?"], ["😬", "Nervios", "¡No sé si estoy preparado!"],
+  ["😟", "Preocupación", "¿Y si no recuerdo las respuestas?"], ["💪", "Confianza", "Puedes intentarlo paso a paso."],
+  ["😄", "Alegría", "¡Qué emoción aprender algo nuevo!"], ["🔎", "Curiosidad", "¡Vamos a descubrir cuánto hemos aprendido!"]
+];
+const SC = [
+  ["😨 El miedo dice: «¡No presentes el examen! Es mejor evitarlo».", "¿Qué puedes hacer?", [
+    ["Hacerle caso y no presentarlo", "Evitar da alivio rápido, pero el miedo suele volver. ¿Qué pasaría si el miedo viaja contigo y tú sigues conduciendo?"],
+    ["Decirle: «Te escucho, pero yo conduzco» y presentarlo", "¡Eso es conducir tu autobús! El miedo puede ir de pasajero sin decidir el camino."],
+    ["Pedir ayuda a alguien de confianza", "Pedir ayuda también es valentía. Un buen copiloto hace el viaje más liviano."]]],
+  ["😬 Los nervios dicen: «¡Vas a equivocarte!».", "¿Necesitas hacer todo lo que te dicen tus nervios?", [
+    ["Sí, tengo que obedecerlos", "Los nervios hablan fuerte, pero solo opinan. Tú decides qué hacer con lo que dicen."],
+    ["No, puedo escucharlos y seguir", "¡Exacto! Escuchar no es obedecer. Puedes respirar y continuar con los nervios a bordo."],
+    ["Puedo respirar hondo y seguir con mi plan", "Respirar te ayuda a sentirte más tranquilo, y tu plan sigue siendo el rumbo."]]],
+  ["😟 La preocupación dice: «¿Y si no sabes responder una pregunta?».", "¿Puedes continuar aunque tengas esa preocupación?", [
+    ["Sí, puedo seguir con la siguiente pregunta", "¡Sí! Una pregunta difícil no detiene el autobús. Puedes volver a ella después."],
+    ["No, tengo que dejar de intentarlo", "La preocupación suena convincente, pero no es la conductora. ¿Qué paso pequeño sí podrías dar?"],
+    ["Puedo preguntarme qué sí sé hacer", "Buena estrategia: mirar lo que ya sabes te devuelve el volante."]]]
+];
+const ERR = ["Algo que intenté y no me salió bien", "Algo que me costó mucho aprender", "Algo que antes no podía hacer y ahora sí puedo"];
+const FRASES = ["¡Los grandes descubrimientos comienzan haciendo preguntas!", "Probemos otra estrategia.", "Equivocarse también nos da información."];
+const TRANS = ["¿Qué sucedió?", "¿Cómo me sentí?", "¿Qué aprendí?", "¿Qué podría intentar diferente la próxima vez?"];
+
+/* ---------- Modo docente ---------- */
+const T = {
+  w0: ["Introducción", "5 min", "Crear vínculo, elegir avatar y presentar la misión.", "Alianza terapéutica y motivación. Gamificación sin puntos ni penalizaciones.", ["¿Qué te gustaría descubrir hoy?", "¿Cómo te sientes antes de empezar?"], "Disposición, energía, si pregunta o se muestra inseguro.", "Deja que el niño maneje el ratón. Valida cada elección."],
+  w1: ["Mundo 1: El detective de pensamientos", "15 min", "Distinguir hechos, predicciones y posibilidades; practicar pensamiento flexible y realista.", "Reestructuración cognitiva (TCC): evidencia a favor y en contra, alternativas. No se pide pensar «positivo» ni se promete aprobar.", ["¿Cómo supiste que era un hecho?", "¿Qué evidencia tenemos?", "¿Qué le dirías a un amigo que piensa eso?"], "Pensamientos catastróficos, generalizaciones («todos», «siempre»), si logra generar alternativas propias.", "Si dice «voy a perder»: «¿Cómo lo sabes hoy?». Normaliza que la mente anticipa. Evita corregir; invita a investigar."],
+  w2: ["Mundo 2: El autobús de las emociones", "15 min", "Convivir con emociones incómodas sin que decidan por él.", "Metáfora del autobús (ACT): aceptación, defusión y acción comprometida con valores.", ["¿Cuál pasajero suele hablar más fuerte?", "¿Qué haces cuando él grita?", "¿A dónde quiere llevar tu autobús?"], "Si ve las emociones como enemigas, evitación («mejor no presentarlo»), respuestas propias.", "Refuerza: no hay que eliminar al pasajero, solo seguir conduciendo. Pregunta por un momento real en que condujo con miedo."],
+  w3: ["Mundo 3: El museo de los errores", "20 min", "Tolerancia al error, autocompasión y mentalidad de crecimiento.", "Mentalidad de crecimiento (Dweck), autocompasión, análisis del error sin juicio.", ["¿Qué te dijiste cuando te equivocaste?", "¿Qué le dirías a un amigo en tu lugar?", "¿Qué te enseñó ese error?"], "Autocrítica dura, perfeccionismo, frustración en el acertijo, si persiste con curiosidad.", "Celebra el esfuerzo y los intentos, no el resultado. Comparte un error tuyo para normalizarlo."],
+  card: ["Cierre: Mi tarjeta de valentía", "5 min", "Consolidar aprendizajes en un compromiso personal.", "Autoinstrucciones y acción comprometida (ACT + TCC).", ["¿Qué parte de la tarjeta te sirve más?", "¿Cuándo la vas a leer?"], "Si la frase es genuina y concreta.", "Invita a imprimirla o guardarla como PDF y ponerla donde estudia. Sugiere hablar con familia o psicólogo si el miedo es muy intenso."]
+};
+const EXTRA = ["¿Qué crees que es lo que más miedo te produce de los exámenes?", "¿Qué imaginas que podría pasar si te equivocas?", "¿Qué le dirías a un amigo que estuviera sintiendo lo mismo?", "¿Qué te gustaría aprender a hacer cuando aparecen los nervios?"];
+
+/* ---------- Vistas ---------- */
+const doneAll = () => S.done.length >= 3;
+const worldKey = () => ({ home: "w0", end: "card", card: "card" }[S.v] || "w" + S.v[1]);
+const V = {
+  home() {
+    const first = [0, 1, 2].find(i => !S.done.includes(i)), start = first === undefined ? "card" : WORLDS[first][3];
+    return `<section class="screen hero">
+      <h1>MISIÓN: ¡YO TENGO EL CONTROL!</h1>
+      <p class="sub">Aprendo a manejar mis pensamientos, aceptar mis emociones y convertir mis errores en aprendizajes.</p>
+      <p><b>Hoy descubrirás que puedes sentir miedo, equivocarte y aun así seguir adelante.</b></p>
+      <p>Elige a tu compañero explorador:</p>
+      <div class="avatars">${["🧭", "🦸", "🧑‍🚀", "🦊", "🐼"].map(a => `<button class="av ${S.av === a ? "on" : ""}" data-a="av" data-p="${a}" aria-label="Avatar ${a}">${a}</button>`).join("")}</div>
+      <button class="btn" data-a="go" data-p="${start}">COMENZAR MI AVENTURA</button>
+      <div class="worlds">${WORLDS.map((w, i) => {
+        const open = i === 0 || S.done.includes(i - 1), ok = S.done.includes(i);
+        return `<button class="world ${open ? "" : "lock"} ${ok ? "ok" : ""}" data-a="world" data-p="${i}"><span class="ic">${open ? w[0] : "🔒"}</span><span class="pill dk">${w[1]}</span><h3>${w[2]}</h3><small>${open ? "¡Listo para explorar!" : "Completa el mundo anterior"}</small></button>`;
+      }).join("")}</div>
+      ${doneAll() ? `<button class="btn alt" data-a="go" data-p="end">🏅 Ver mi insignia</button>` : ""}
+    </section>`;
+  },
+  w1a() {
+    return `<section class="screen"><h2>🔍 Mundo 1: El detective de pensamientos</h2>
+    ${story("Tu cerebro es increíble. Siempre está intentando anticiparse a lo que va a suceder. Pero algunas veces imagina situaciones negativas que todavía no han ocurrido. ¡Hoy serás un detective y descubrirás cuándo tu mente está imaginando y cuándo está observando hechos reales!", "Misión")}
+    ${next("w1b", "Empezar a investigar ➜")}</section>`;
+  },
+  w1b() {
+    const ok = CARDS.filter((c, i) => S.a["c" + i] === c[1]).length;
+    return `<section class="screen"><h2>¿Hecho, predicción o posibilidad?</h2><p>Lee cada tarjeta y elige a qué grupo pertenece. Llevas ${ok} de 5 casos resueltos.</p>
+    ${CARDS.map((c, i) => {
+      const ch = S.a["c" + i], good = ch === c[1];
+      return `<div class="card"><h3>“${c[0]}”</h3><div class="opts">${Object.keys(CAT).map(k => `<button class="opt ${ch === k ? "sel" : ""}" data-a="card" data-p="${i},${k}">${CAT[k]}</button>`).join("")}</div>
+      ${ch ? `<div class="fb ${good ? "good" : ""}">${good ? "¡Buena observación! " + c[2] : "¡Vamos a investigar un poquito más! ¿Qué evidencia tenemos? Prueba otra opción."}</div>` : ""}</div>`;
+    }).join("")}
+    ${next("w1c", "Ir al laboratorio ➜", ok < 5)}</section>`;
+  },
+  w1c() {
+    return `<section class="screen"><h2>🧪 El laboratorio de pensamientos</h2>
+    <div class="card story"><p>Imagina que mañana tienes un examen de matemáticas y piensas: <b>«VOY A PERDER»</b>.</p></div>
+    ${LAB.map((l, i) => `<div class="card"><label>${i + 1}. ${l[0]}</label>${ta("l" + i, l[1])}</div>`).join("")}
+    <div class="card"><h3>Ejemplos de pensamientos alternativos</h3><div class="chips">${ALT.map(a => `<span>${a}</span>`).join("")}</div><small>No se trata de pensar «todo saldrá bien», sino de pensar de forma más realista y flexible.</small></div>
+    <button class="btn" data-a="fin1">COMPLETAR MI INVESTIGACIÓN</button></section>`;
+  },
+  w2a() {
+    return `<section class="screen"><h2>🚌 Mundo 2: El autobús de las emociones</h2>
+    ${story("Imagina que eres el conductor de un autobús. Tu destino es aprender, crecer y cumplir tus objetivos. Durante el viaje aparecen diferentes pasajeros. Algunos son agradables y otros son incómodos. Pero recuerda: ¡Tú eres el conductor!", "Misión")}
+    ${next("w2b", "Construir mi autobús ➜")}</section>`;
+  },
+  w2b() {
+    const sel = S.a.pas || [];
+    return `<section class="screen"><h2>Construye tu autobús</h2><p>Cuando piensas en un examen, ¿qué pasajeros aparecen? Toca para subirlos o bajarlos.</p>
+    <div class="pgrid">${PAS.map((p, i) => `<button class="pbtn ${sel.includes(i) ? "sel" : ""}" data-a="pas" data-p="${i}"><big>${p[0]}</big>${p[1]}<span class="say">“${p[2]}”</span></button>`).join("")}</div>
+    <div class="road"><div class="bus drive"><span class="driver">${S.av}</span>${sel.length ? sel.map(i => `<div class="pas"><big>${PAS[i][0]}</big>${PAS[i][1]}</div>`).join("") : "<b>¡Tu autobús espera pasajeros!</b>"}</div></div>
+    ${next("w2c", "¿Quién conduce? ➜", !sel.length)}</section>`;
+  },
+  w2c() {
+    const done = SC.every((s, i) => S.a["s" + i] !== undefined || (S.a["sc" + i] || "").trim());
+    return `<section class="screen"><h2>¿Quién conduce el autobús?</h2>
+    ${SC.map((s, i) => `<div class="card"><h3>${s[0]}</h3><p><b>${s[1]}</b></p><div class="opts">${s[2].map((o, j) => `<button class="opt ${S.a["s" + i] === j ? "sel" : ""}" data-a="sc" data-p="${i},${j}">${o[0]}</button>`).join("")}</div>
+    ${S.a["s" + i] !== undefined ? `<div class="fb good">${s[2][S.a["s" + i]][1]}</div>` : ""}
+    <label>O escribe tu propia respuesta:</label>${inp("sc" + i, "Yo podría...")}<button class="btn alt" data-a="scsave" data-p="${i}">Guardar mi respuesta</button>
+    ${S.a["sd" + i] ? `<div class="fb good">¡Gracias por compartir! Tu respuesta importa: tú sabes mejor que nadie cómo conducir tu autobús.</div>` : ""}</div>`).join("")}
+    <div class="quote">PUEDO SENTIR MIEDO Y AUN ASÍ INTENTARLO</div>
+    <div class="road"><div class="bus drive"><span class="driver">${S.av}</span>${(S.a.pas || [0, 1, 2]).map(i => `<div class="pas"><big>${PAS[i][0]}</big>${PAS[i][1]}</div>`).join("")}</div></div>
+    <p>Los pasajeros incómodos pueden viajar contigo. El autobús sigue su camino y tú sigues conduciendo.</p>
+    <button class="btn" data-a="fin2" ${done ? "" : "disabled"}>${done ? "COMPLETAR MUNDO 2" : "Responde los tres escenarios"}</button></section>`;
+  },
+  w3a() {
+    return `<section class="screen"><h2>🏛️ Mundo 3: El museo de los errores</h2>
+    ${story("Hoy visitaremos un museo muy especial. Aquí no hay trofeos por ser perfecto. Aquí celebramos los errores que nos ayudaron a aprender.", "Misión")}
+    ${next("w3b", "Entrar al museo ➜")}</section>`;
+  },
+  w3b() {
+    return `<section class="screen"><h2>Mis tres aprendizajes</h2><p>Escribe y mira cómo tus recuerdos se convierten en cuadros del museo.</p>
+    <div class="grid3">${ERR.map((e, i) => `<div class="frame"><b>🖼️ ${e}</b>${ta("m" + i, "Escribe aquí...", 3)}<p data-pv="m${i}">${esc(S.a["m" + i]) || "…"}</p></div>`).join("")}</div>
+    ${next("w3c", "Ir al reto ➜")}</section>`;
+  },
+  w3c() {
+    const n = S.a.rt || 0, solved = S.a.rs;
+    return `<section class="screen"><h2>🧩 El reto de equivocarse</h2>
+    <div class="card"><p><b>Acertijo:</b> «Tengo ciudades, pero no casas. Tengo ríos, pero no agua. Tengo carreteras, pero no autos. ¿Qué soy?»</p>
+    ${solved ? `<div class="fb good">🎉 ¡Lo descubriste! La respuesta es un <b>mapa</b>. Y cada intento te acercó un poco más.</div>` : `${inp("rans", "Mi respuesta...")}<button class="btn alt" data-a="riddle">Probar</button>
+    ${n ? `<div class="fb">${FRASES[(n - 1) % 3]}</div>` : ""}${n >= 2 ? `<div class="fb">💡 Pista: lo usas para orientarte y viajar sin moverte de tu silla.</div>` : ""}${n >= 3 ? `<button class="btn" data-a="reveal">Ver la respuesta</button>` : ""}`}</div>
+    ${next("w3d", "Transformar mis errores ➜", !solved)}</section>`;
+  },
+  w3d() {
+    return `<section class="screen"><h2>Transformando los errores</h2><p>Piensa en un error reciente y responde con calma.</p>
+    ${TRANS.map((t, i) => `<div class="card"><label>${t}</label>${ta("t" + i, "Escribe aquí...")}</div>`).join("")}
+    <div class="quote">NO NECESITO HACERLO PERFECTO PARA SENTIRME ORGULLOSO DE MÍ</div>
+    <button class="btn" data-a="fin3">COMPLETAR MUNDO 3</button></section>`;
+  },
+  card() {
+    return `<section class="screen"><h2>🛡️ Actividad final</h2><p>Completa tu frase y genera tu tarjeta.</p>
+    <div class="card"><label>Mi nombre</label>${inp("nm", "Tu nombre")}<label>Aunque sienta...</label>${inp("f1", "por ejemplo: nervios")}<label>...voy a intentar...</label>${inp("f2", "por ejemplo: resolver el examen paso a paso")}<label>...porque...</label>${inp("f3", "por ejemplo: quiero seguir aprendiendo")}</div>
+    <div class="vcard" id="tarjeta"><div style="font-size:3rem">${S.av}</div><h2>MI TARJETA DE VALENTÍA</h2><p><b data-pv="nm">${esc(S.a.nm) || "Explorador"}</b></p>
+    <p>Cuando tenga un examen y aparezcan los nervios:</p><ul><li>Recordaré que mis pensamientos no siempre son hechos.</li><li>No necesito eliminar el miedo para intentarlo.</li><li>Puedo equivocarme y seguir aprendiendo.</li><li>Mi calificación no determina cuánto valgo.</li></ul>
+    <div class="fill">Aunque sienta <u data-pv="f1">${esc(S.a.f1) || "__________"}</u>, voy a intentar <u data-pv="f2">${esc(S.a.f2) || "__________"}</u> porque <u data-pv="f3">${esc(S.a.f3) || "__________"}</u>.</div></div>
+    <button class="btn alt" data-a="print">🖨️ Generar e imprimir mi tarjeta</button><button class="btn" data-a="fincard">FINALIZAR MISIÓN</button></section>`;
+  },
+  end() {
+    return `<section class="screen end"><div class="badge">🏅</div><h1>¡MISIÓN COMPLETADA!</h1>
+    <div class="quote">EXPLORADOR DE LA VALENTÍA${S.a.nm ? ": " + esc(S.a.nm) : ""}</div>
+    <p style="max-width:640px;margin:auto"><b>Ser valiente no significa no sentir miedo. Significa aprender a seguir adelante incluso cuando aparecen emociones difíciles. ¡Lo estás haciendo muy bien!</b></p>
+    <p><button class="btn alt" data-a="go" data-p="card">Ver mi tarjeta</button><button class="btn" data-a="go" data-p="home">Volver al menú</button><button class="btn alt" data-a="confetti">🎉 Celebrar</button></p></section>`;
+  }
+};
+
+/* ---------- Render y acciones ---------- */
+function render(top = true) {
+  if (!V[S.v]) S.v = "home";
+  $("#app").innerHTML = V[S.v]();
+  const n = S.done.length;
+  $("#barfill").style.width = n / 3 * 100 + "%";
+  $("#progtxt").textContent = n + " de 3 mundos";
+  $("#prog").setAttribute("aria-valuenow", n);
+  teacherRender();
+  if (top) window.scrollTo({ top: 0 });
+  if (S.v === "end" && top) confetti();
+}
+function teacherRender() {
+  const t = T[worldKey()] || T.w0;
+  const li = a => "<ul>" + a.map(x => `<li>${x}</li>`).join("") + "</ul>";
+  $("#tbody").innerHTML = `<h2>${t[0]}</h2><p><b>⏱️ Tiempo:</b> ${t[1]}</p><h3>Objetivo</h3><p>${t[2]}</p><h3>Técnica</h3><p>${t[3]}</p><h3>Preguntas para profundizar</h3>${li(t[4])}<h3>Qué observar</h3><p>${t[5]}</p><h3>Cómo continuar la conversación</h3><p>${t[6]}</p>
+  <h3>Agenda de la sesión</h3>${li(["Introducción: 5 min", "Mundo 1: 15 min", "Mundo 2: 15 min", "Mundo 3: 20 min", "Cierre: 5 min"])}
+  <h3>Preguntas adicionales (no son diagnóstico)</h3>${li(EXTRA)}<small>Estas preguntas son para conversar, no para evaluar ni diagnosticar. Si el miedo es muy intenso o persistente, sugiere apoyo profesional.</small>`;
+}
+function confetti() {
+  const c = ["#F5C451", "#4169E1", "#8064D8", "#ff8fb1", "#6ee7b7"];
+  for (let i = 0; i < 70; i++) {
+    const d = document.createElement("div"); d.className = "cf";
+    d.style.cssText = `left:${Math.random() * 100}vw;background:${c[i % 5]};animation-duration:${2 + Math.random() * 3}s;animation-delay:${Math.random()}s`;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 6500);
+  }
+}
+const go = v => { S.v = v; save(); render(); };
+const finish = (i, to, msg) => { if (!S.done.includes(i)) S.done.push(i); toast(msg); go(to); };
+const A = {
+  go: p => go(p),
+  av: p => { S.av = p; save(); render(false); },
+  world: p => { p = +p; (p === 0 || S.done.includes(p - 1)) ? go(WORLDS[p][3]) : toast("🔒 Completa primero el mundo anterior"); },
+  card: p => { const [i, k] = p.split(","); S.a["c" + i] = k; save(); render(false); },
+  fin1: () => (S.a.l0 || "").trim() && (S.a.l3 || "").trim() ? finish(0, "w2a", "⭐ ¡Mundo 1 completado!") : toast("Escribe al menos la primera y la última respuesta"),
+  pas: p => { const s = S.a.pas || []; p = +p; S.a.pas = s.includes(p) ? s.filter(x => x !== p) : [...s, p]; save(); render(false); },
+  sc: p => { const [i, j] = p.split(","); S.a["s" + i] = +j; save(); render(false); },
+  scsave: p => { if ((S.a["sc" + p] || "").trim()) { S.a["sd" + p] = 1; save(); render(false); } else toast("Escribe tu respuesta primero"); },
+  fin2: () => finish(1, "w3a", "⭐ ¡Mundo 2 completado!"),
+  riddle: () => {
+    const v = (S.a.rans || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!v.trim()) return toast("Escribe una respuesta para probar");
+    if (/\bmapa/.test(v)) S.a.rs = 1; else S.a.rt = (S.a.rt || 0) + 1;
+    save(); render(false);
+  },
+  reveal: () => { S.a.rs = 1; save(); render(false); },
+  fin3: () => (S.a.t2 || "").trim() ? finish(2, "card", "⭐ ¡Mundo 3 completado!") : toast("Cuéntame al menos qué aprendiste"),
+  print: () => window.print(),
+  fincard: () => doneAll() ? go("end") : toast("Completa los tres mundos primero"),
+  confetti,
+  teacher: () => { const t = $("#teacher"); t.hidden = !t.hidden; },
+  reset: () => { if (confirm("¿Reiniciar toda la experiencia? Se borrarán las respuestas.")) { S = { av: "🧭", done: [], a: {}, v: "home" }; try { localStorage.removeItem("yc_v1"); } catch (e) {} $("#teacher").hidden = true; render(); } }
+};
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-a]");
+  if (b && A[b.dataset.a]) A[b.dataset.a](b.dataset.p);
+});
+document.addEventListener("input", e => {
+  const k = e.target.dataset.k; if (!k) return;
+  S.a[k] = e.target.value; save();
+  document.querySelectorAll(`[data-pv="${k}"]`).forEach(n => n.textContent = e.target.value || (k === "nm" ? "Explorador" : k[0] === "m" ? "…" : "__________"));
+});
+render();
