@@ -200,10 +200,10 @@ const V = {
       <div class="avatars">${["🧭", "🦸", "🧑‍🚀", "🦊", "🐼"].map(a => `<button class="av ${S.av === a ? "on" : ""}" data-a="av" data-p="${a}" aria-label="Avatar ${a}">${a}</button>`).join("")}</div>
       <button class="btn" data-a="go" data-p="${start}">COMENZAR MI AVENTURA</button>
       <div class="worlds">${WORLDS.map((w, i) => {
-        const open = i === 0 || S.done.includes(i - 1), ok = S.done.includes(i);
-        return `<button class="world ${open ? "" : "lock"} ${ok ? "ok" : ""}" data-a="world" data-p="${i}"><span class="ic">${open ? w[0] : "🔒"}</span><span class="pill dk">${w[1]}</span><h3>${w[2]}</h3><small>${open ? "¡Listo para explorar!" : "Completa el mundo anterior"}</small></button>`;
+        const open = true, ok = S.done.includes(i);
+        return `<button class="world ${open ? "" : "lock"} ${ok ? "ok" : ""}" data-a="world" data-p="${i}"><span class="ic">${open ? w[0] : "🔒"}</span><span class="pill dk">${w[1]}</span><h3>${w[2]}</h3><small>¡Listo para explorar!</small></button>`;
       }).join("")}</div>
-      ${doneAll() ? `<button class="btn alt" data-a="go" data-p="end">🏅 Ver mi insignia</button>` : ""}
+      <div class="card"><h3>Ir directo a una actividad</h3><div class="opts">${[["w1b","1: ¿Hecho o predicción?"],["w1c","1: Laboratorio"],["w2b","2: Mi autobús"],["w2c","2: ¿Quién conduce?"],["w3b","3: Mis aprendizajes"],["w3c","3: Reto"],["w3d","3: Transformando errores"],["card","Mi tarjeta"],["end","Insignia"]].map(x=>`<button class="opt" data-a="go" data-p="${x[0]}">${x[1]}</button>`).join("")}</div></div>
     </section>`;
   },
   w1a() {
@@ -219,7 +219,7 @@ const V = {
       return `<div class="card"><h3>“${c[0]}”</h3><div class="opts">${Object.keys(CAT).map(k => `<button class="opt ${ch === k ? "sel" : ""}" data-a="card" data-p="${i},${k}">${CAT[k]}</button>`).join("")}</div>
       ${ch ? `<div class="fb ${good ? "good" : ""}">${good ? "¡Buena observación! " + c[2] : "¡Vamos a investigar un poquito más! ¿Qué evidencia tenemos? Prueba otra opción."}</div>` : ""}</div>`;
     }).join("")}
-    ${next("w1c", "Ir al laboratorio ➜", ok < 5)}</section>`;
+    ${next("w1c", "Ir al laboratorio ➜")}</section>`;
   },
   w1c() {
     return `<section class="screen"><h2>🧪 El laboratorio de pensamientos</h2>
@@ -238,7 +238,7 @@ const V = {
     return `<section class="screen"><h2>Construye tu autobús</h2><p>Cuando piensas en un examen, ¿qué pasajeros aparecen? Toca para subirlos o bajarlos.</p>
     <div class="pgrid">${PAS.map((p, i) => `<button class="pbtn ${sel.includes(i) ? "sel" : ""}" data-a="pas" data-p="${i}"><big>${p[0]}</big>${p[1]}<span class="say">“${p[2]}”</span></button>`).join("")}</div>
     <div class="road"><div class="bus drive"><span class="driver">${S.av}</span>${sel.length ? sel.map(i => `<div class="pas"><big>${PAS[i][0]}</big>${PAS[i][1]}</div>`).join("") : "<b>¡Tu autobús espera pasajeros!</b>"}</div></div>
-    ${next("w2c", "¿Quién conduce? ➜", !sel.length)}</section>`;
+    ${next("w2c", "¿Quién conduce? ➜")}</section>`;
   },
   w2c() {
     const done = SC.every((s, i) => S.a["s" + i] !== undefined || (S.a["sc" + i] || "").trim());
@@ -250,7 +250,7 @@ const V = {
     <div class="quote">PUEDO SENTIR MIEDO Y AUN ASÍ INTENTARLO</div>
     <div class="road"><div class="bus drive"><span class="driver">${S.av}</span>${(S.a.pas || [0, 1, 2]).map(i => `<div class="pas"><big>${PAS[i][0]}</big>${PAS[i][1]}</div>`).join("")}</div></div>
     <p>Los pasajeros incómodos pueden viajar contigo. El autobús sigue su camino y tú sigues conduciendo.</p>
-    <button class="btn" data-a="fin2" ${done ? "" : "disabled"}>${done ? "COMPLETAR MUNDO 2" : "Responde los tres escenarios"}</button></section>`;
+    <button class="btn" data-a="fin2">COMPLETAR MUNDO 2</button></section>`;
   },
   w3a() {
     return `<section class="screen"><h2>🏛️ Mundo 3: El museo de los errores</h2>
@@ -268,7 +268,7 @@ const V = {
     <div class="card"><p><b>Acertijo:</b> «Tengo ciudades, pero no casas. Tengo ríos, pero no agua. Tengo carreteras, pero no autos. ¿Qué soy?»</p>
     ${solved ? `<div class="fb good">🎉 ¡Lo descubriste! La respuesta es un <b>mapa</b>. Y cada intento te acercó un poco más.</div>` : `${inp("rans", "Mi respuesta...")}<button class="btn alt" data-a="riddle">Probar</button>
     ${n ? `<div class="fb">${FRASES[(n - 1) % 3]}</div>` : ""}${n >= 2 ? `<div class="fb">💡 Pista: lo usas para orientarte y viajar sin moverte de tu silla.</div>` : ""}${n >= 3 ? `<button class="btn" data-a="reveal">Ver la respuesta</button>` : ""}`}</div>
-    ${next("w3d", "Transformar mis errores ➜", !solved)}</section>`;
+    ${next("w3d", "Transformar mis errores ➜")}</section>`;
   },
   w3d() {
     return `<section class="screen"><h2>Transformando los errores</h2><p>Piensa en un error reciente y responde con calma.</p>
@@ -324,9 +324,9 @@ const finish = (i, to, msg) => { if (!S.done.includes(i)) S.done.push(i); toast(
 const A = {
   go: p => go(p),
   av: p => { S.av = p; save(); render(false); },
-  world: p => { p = +p; (p === 0 || S.done.includes(p - 1)) ? go(WORLDS[p][3]) : toast("🔒 Completa primero el mundo anterior"); },
+  world: p => { p = +p; go(WORLDS[p][3]); },
   card: p => { const [i, k] = p.split(","); S.a["c" + i] = k; save(); render(false); },
-  fin1: () => (S.a.l0 || "").trim() && (S.a.l3 || "").trim() ? finish(0, "w2a", "⭐ ¡Mundo 1 completado!") : toast("Escribe al menos la primera y la última respuesta"),
+  fin1: () => finish(0, "w2a", "⭐ ¡Mundo 1 completado!"),
   pas: p => { const s = S.a.pas || []; p = +p; S.a.pas = s.includes(p) ? s.filter(x => x !== p) : [...s, p]; save(); render(false); },
   sc: p => { const [i, j] = p.split(","); S.a["s" + i] = +j; save(); render(false); },
   scsave: p => { if ((S.a["sc" + p] || "").trim()) { S.a["sd" + p] = 1; save(); render(false); } else toast("Escribe tu respuesta primero"); },
@@ -338,9 +338,9 @@ const A = {
     save(); render(false);
   },
   reveal: () => { S.a.rs = 1; save(); render(false); },
-  fin3: () => (S.a.t2 || "").trim() ? finish(2, "card", "⭐ ¡Mundo 3 completado!") : toast("Cuéntame al menos qué aprendiste"),
+  fin3: () => finish(2, "card", "⭐ ¡Mundo 3 completado!"),
   print: () => window.print(),
-  fincard: () => doneAll() ? go("end") : toast("Completa los tres mundos primero"),
+  fincard: () => go("end"),
   confetti,
   teacher: () => { const t = $("#teacher"); t.hidden = !t.hidden; },
   reset: () => { if (confirm("¿Reiniciar toda la experiencia? Se borrarán las respuestas.")) { S = { av: "🧭", done: [], a: {}, v: "home" }; try { localStorage.removeItem("yc_v1"); } catch (e) {} $("#teacher").hidden = true; render(); } }
